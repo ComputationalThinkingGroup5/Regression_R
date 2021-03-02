@@ -1,0 +1,119 @@
+```{r}
+link='https://github.com/ComputationalThinkingGroup5/Merge/raw/master/MergedData.csv'
+# a RDS file from the web needs:
+mergedFile=read.csv(link)
+```
+
+
+```{r}
+str(mergedFile,width = 50,strict.width='cut')
+```
+
+
+```{r}
+hypo1=formula(percentunemployment~ percentbirthrate)
+hypo2=formula(percentunemployment~ percentbirthrate * pct_GDP_exp)
+```
+
+
+```{r}
+gauss1=glm(hypo1,
+           data = mergedFile,
+           family = 'gaussian')
+
+gauss2=glm(hypo2,
+           data = mergedFile,
+           family = 'gaussian')
+
+```
+```{r}
+summary(gauss1)
+```
+```{r}
+summary(gauss2)
+```
+```{r}
+anova(gauss1,gauss2,test="Chisq")
+```
+
+```{r}
+library(rsq)
+rsq(gauss2,adj=T)
+```
+```{r}
+library(dotwhisker)
+```
+```{r}
+dwplot(gauss2,by_2sd = F)
+```
+```{r}
+library(margins)
+
+cplot(gauss2,'percentbirthrate')
+```
+```{r}
+cplot(gauss2,'pct_GDP_exp')
+```
+```{r}
+persp(gauss2)
+```
+```{r}
+mergedFile$percentunemploymentdico=ifelse(mergedFile$percentunemployment>median(mergedFile$percentunemployment,
+                                        na.rm = T),
+                      1,0)
+```
+
+
+```{r}
+hypoDico1=formula(percentunemploymentdico~ percentunemployment)
+hypoDico2=formula(percentunemploymentdico~ percentunemployment * pct_GDP_exp)
+```
+```{r}
+mergedFile$mergedFiledico=factor(mergedFile$percentunemploymentdico)
+```
+
+
+```{r}
+Logi1=glm(hypoDico1,data = mergedFile,
+          family = "binomial")
+Logi2=glm(hypoDico2,data = mergedFile,
+          family = "binomial")
+```
+```{r}
+summary(Logi1)
+```
+```{r}
+summary(Logi2)
+```
+```{r}
+lmtest::lrtest(Logi1,Logi2)
+```
+```{r}
+library(margins)
+(marginsINFO = margins(Logi2))
+```
+```{r}
+(marginsSUMM=summary(marginsINFO))
+```
+```{r}
+base= ggplot(marginsSUMM,
+             aes(x=factor, y=AME))
+base= base + geom_point()
+
+plotMargins = base + theme(axis.text.x = element_text(angle = 80,size = 6,hjust = 1))
+plotMargins    
+```
+```{r}
+plotMargins +  geom_errorbar(aes(ymin=lower,
+                                 ymax=upper))
+```
+```{r}
+cplot(Logi2, "percentbirthrate")
+```
+```{r}
+cplot(Logi2, "pct_GDP_exp")
+```
+```{r}
+persp(Logi2)
+```
+
