@@ -4,19 +4,23 @@ link='https://github.com/ComputationalThinkingGroup5/Merge/raw/master/MergedData
 mergedFile=read.csv(link)
 ```
 
-
+Verifying data structure:
 ```{r}
 str(mergedFile,width = 50,strict.width='cut')
 ```
 
 
 ```{r}
+# hypothesis 1: percentunemployment increases as percentbirthrate advances:
 hypo1=formula(percentunemployment~ percentbirthrate)
+# hypothesis 2: percentunemployment increases as percentbirthrate and pct_GDP_exp advance:
 hypo2=formula(percentunemployment~ percentbirthrate * pct_GDP_exp)
 ```
 
 
 ```{r}
+#
+# results
 gauss1=glm(hypo1,
            data = mergedFile,
            family = 'gaussian')
@@ -26,26 +30,34 @@ gauss2=glm(hypo2,
            family = 'gaussian')
 
 ```
+
+3.See results:
+·First Hypothesis
 ```{r}
 summary(gauss1)
 ```
+·Second Hypothesis
 ```{r}
 summary(gauss2)
 ```
+4.Search for better model:
 ```{r}
 anova(gauss1,gauss2,test="Chisq")
 ```
-
+Model for the first hypothesis is chosen. You can get the RSquared if needed:
 ```{r}
 library(rsq)
 rsq(gauss2,adj=T)
 ```
+Finally, some nice summary plots:
+You can see the coefficient estimates like this:
 ```{r}
 library(dotwhisker)
 ```
 ```{r}
 dwplot(gauss2,by_2sd = F)
 ```
+You can also use margins library:
 ```{r}
 library(margins)
 
@@ -54,47 +66,63 @@ cplot(gauss2,'percentbirthrate')
 ```{r}
 cplot(gauss2,'pct_GDP_exp')
 ```
+And the interaction:
 ```{r}
 persp(gauss2)
 ```
+Binary outcome
+In this situation you have a binary dependent variable, which we do not currently have:
 ```{r}
 mergedFile$percentunemploymentdico=ifelse(mergedFile$percentunemployment>median(mergedFile$percentunemployment,
                                         na.rm = T),
                       1,0)
 ```
 
+Now we have it.
 
+1.State hypothesis:
+Let’s use the same ones:
 ```{r}
 hypoDico1=formula(percentunemploymentdico~ percentunemployment)
 hypoDico2=formula(percentunemploymentdico~ percentunemployment * pct_GDP_exp)
 ```
+2.Reformat
 ```{r}
 mergedFile$mergedFiledico=factor(mergedFile$percentunemploymentdico)
 ```
 
-
+3.Compute regression models:
 ```{r}
 Logi1=glm(hypoDico1,data = mergedFile,
           family = "binomial")
 Logi2=glm(hypoDico2,data = mergedFile,
           family = "binomial")
 ```
+4.See results:
+·First Hypothesis:
 ```{r}
 summary(Logi1)
 ```
+3.Second Hypothesis:
 ```{r}
 summary(Logi2)
 ```
+5.Search for better model:
 ```{r}
 lmtest::lrtest(Logi1,Logi2)
 ```
+Model for the second hypothesis is chosen.
+
+6.Logistics regression coefficients do not offer marginal effects on how much eah variable affects the probability of the ‘1’ outcome. We can get it using margins library:
 ```{r}
 library(margins)
 (marginsINFO = margins(Logi2))
 ```
+In this case, I could produce a plot for both coefficients. Take a look at the summary of
 ```{r}
 (marginsSUMM=summary(marginsINFO))
 ```
+I can use that information like this:
 ```{r}
 base= ggplot(marginsSUMM,
              aes(x=factor, y=AME))
@@ -103,16 +131,19 @@ base= base + geom_point()
 plotMargins = base + theme(axis.text.x = element_text(angle = 80,size = 6,hjust = 1))
 plotMargins    
 ```
+We can add the the confidence intervals:
 ```{r}
 plotMargins +  geom_errorbar(aes(ymin=lower,
                                  ymax=upper))
 ```
+It is a good idea to use the indivual plots per variable:
 ```{r}
 cplot(Logi2, "percentbirthrate")
 ```
 ```{r}
 cplot(Logi2, "pct_GDP_exp")
 ```
+And for the interaction:
 ```{r}
 persp(Logi2)
 ```
